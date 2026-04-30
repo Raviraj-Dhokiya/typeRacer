@@ -1,6 +1,6 @@
 import { getRating } from '../utils/textUtils'
 
-export default function ResultsPanel({ wpm, accuracy, timeTaken, onRestart, onSave, saved }) {
+export default function ResultsPanel({ wpm, accuracy, timeTaken, onRestart }) {
   const rating = getRating(wpm)
 
   return (
@@ -31,15 +31,6 @@ export default function ResultsPanel({ wpm, accuracy, timeTaken, onRestart, onSa
         <button id="restart-btn" className="btn btn-primary" onClick={onRestart}>
           <span>↺</span> Try Again
         </button>
-        {onSave && (
-          <button
-            className={`btn ${saved ? 'btn-saved' : 'btn-ghost'}`}
-            onClick={onSave}
-            disabled={saved}
-          >
-            {saved ? '✅ Saved' : '💾 Save Result'}
-          </button>
-        )}
       </div>
     </div>
   )

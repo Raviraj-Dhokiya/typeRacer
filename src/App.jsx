@@ -90,18 +90,20 @@ export default function App() {
     clearInterval(timerRef.current)
     const secs         = Math.round(elapsed || (Date.now() - startTimeRef.current) / 1000)
     const correctChars = typed.split('').filter((c, i) => c === text[i]).length
-    setFinalWPM(calcWPM(correctChars, secs))
-    setFinalAcc(calcAccuracy(typed, text))
+    const wpm = calcWPM(correctChars, secs)
+    const acc = calcAccuracy(typed, text)
+    
+    setFinalWPM(wpm)
+    setFinalAcc(acc)
     setTimeTaken(secs)
     setFinished(true)
     setStarted(false)
-  }, [typed, text])
 
-  /* ── Save result ── */
-  const handleSave = useCallback(() => {
-    saveResult({ wpm: finalWPM, accuracy: finalAcc, timeTaken, mode })
-    setResultSaved(true)
-  }, [saveResult, finalWPM, finalAcc, timeTaken, mode])
+    if (user) {
+      saveResult({ wpm, accuracy: acc, timeTaken: secs, mode })
+      setResultSaved(true)
+    }
+  }, [typed, text, user, saveResult, mode])
 
   /* ── Typing ── */
   const handleInput = useCallback((e) => {
@@ -220,8 +222,6 @@ export default function App() {
             timeTaken={timeTaken}
             mode={mode}
             onRestart={reset}
-            onSave={user ? handleSave : null}
-            saved={resultSaved}
           />
         ) : (
           <div

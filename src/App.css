@@ -245,7 +245,7 @@
 }
 
 .char.correct {
-  color: var(--text-secondary);
+  color: var(--correct);
 }
 
 .char.error {

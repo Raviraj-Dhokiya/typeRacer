@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext'
+import { BADGES_DATA, getTitleForLevel, getXPProgress } from './utils/badgesList'
 
 function StatBox({ label, value, color }) {
   return (
@@ -53,10 +54,18 @@ export default function ProfilePage({ onBack }) {
           {user.avatar || user.username.charAt(0).toUpperCase()}
         </div>
         <div className="profile-hero-info">
-          <h1 className="profile-name">{user.username}</h1>
+          <h1 className="profile-name">
+            {user.username} 
+            <span className="profile-level-badge" style={{ backgroundColor: getTitleForLevel(user.level || 1).color, color: '#000', fontSize: '0.5em', padding: '4px 8px', borderRadius: '12px', marginLeft: '10px', verticalAlign: 'middle' }}>
+              Lvl {user.level || 1} - {getTitleForLevel(user.level || 1).title}
+            </span>
+          </h1>
           <p className="profile-email">{user.email}</p>
-          <p className="profile-joined">
-            Member since {new Date(user.createdAt).toLocaleDateString('en-IN', {
+          <div className="xp-bar-container" style={{ width: '100%', maxWidth: '300px', backgroundColor: 'var(--bg-lighter)', height: '8px', borderRadius: '4px', marginTop: '8px', overflow: 'hidden' }}>
+            <div className="xp-bar-fill" style={{ width: `${getXPProgress(user.xp).progress}%`, backgroundColor: 'var(--primary)', height: '100%' }}></div>
+          </div>
+          <p className="profile-joined" style={{ marginTop: '4px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            {user.xp || 0} / {getXPProgress(user.xp).nextLevelXp} XP • Member since {new Date(user.createdAt).toLocaleDateString('en-IN', {
               month: 'long', year: 'numeric'
             })}
           </p>
@@ -76,13 +85,13 @@ export default function ProfilePage({ onBack }) {
 
       {/* Tabs */}
       <div className="profile-tabs">
-        {['stats', 'history'].map(t => (
+        {['stats', 'history', 'badges'].map(t => (
           <button
             key={t}
             className={`profile-tab ${activeTab === t ? 'active' : ''}`}
             onClick={() => setActiveTab(t)}
           >
-            {t === 'stats' ? '📊 Performance' : '📋 History'}
+            {t === 'stats' ? '📊 Performance' : t === 'history' ? '📋 History' : '🏅 Badges'}
           </button>
         ))}
       </div>
@@ -185,6 +194,41 @@ export default function ProfilePage({ onBack }) {
               <button className="btn btn-primary" onClick={onBack}>Take a Test</button>
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'badges' && (
+        <div className="profile-panel">
+          <h3 className="panel-title">Your Badges ({user.badges?.length || 0} Earned)</h3>
+          <div className="badges-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginTop: '16px' }}>
+            {Object.values(BADGES_DATA).map(badge => {
+              const isEarned = user.badges?.includes(badge.id);
+              return (
+                <div key={badge.id} className={`badge-card ${isEarned ? 'earned' : 'locked'}`} style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  backgroundColor: 'var(--bg-lighter)',
+                  border: isEarned ? '2px solid var(--primary)' : '2px dashed var(--border)',
+                  opacity: isEarned ? 1 : 0.5,
+                  textAlign: 'center',
+                  transition: 'all 0.3s ease'
+                }}>
+                  <div className="badge-icon" style={{ fontSize: '2.5rem', marginBottom: '8px', filter: isEarned ? 'none' : 'grayscale(100%)' }}>
+                    {badge.icon}
+                  </div>
+                  <div className="badge-name" style={{ fontWeight: 'bold', marginBottom: '4px', color: isEarned ? 'var(--text)' : 'var(--text-muted)' }}>
+                    {badge.name}
+                  </div>
+                  <div className="badge-desc" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    {badge.description}
+                  </div>
+                  <div className="badge-category" style={{ fontSize: '0.75rem', marginTop: '8px', color: 'var(--primary)', fontWeight: '600', textTransform: 'uppercase' }}>
+                    {badge.category}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

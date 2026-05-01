@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Toaster } from 'react-hot-toast'
 import './App.css'
 
 import { useAuth }       from './AuthContext'
@@ -147,6 +148,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <Toaster position="bottom-right" reverseOrder={false} />
 
       {/* ── Header ── */}
       <header className="header">

@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-
+import toast from 'react-hot-toast'
+import confetti from 'canvas-confetti'
+import { BADGES_DATA } from './utils/badgesList'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
@@ -41,6 +43,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('typeracer_user', JSON.stringify(data.user))
       setToken(data.token)
       setUser(data.user)
+      toast.success('Account created successfully!')
       return { success: true }
     } catch (err) {
       return { error: 'Network error' }
@@ -61,6 +64,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('typeracer_user', JSON.stringify(data.user))
       setToken(data.token)
       setUser(data.user)
+      toast.success('Successfully logged in!')
       return { success: true }
     } catch (err) {
       return { error: 'Network error' }
@@ -73,6 +77,7 @@ export function AuthProvider({ children }) {
     setToken(null)
     setUser(null)
     setResults([])
+    toast.success('Logged out successfully!')
   }
 
   const saveResult = async (result) => {
@@ -88,7 +93,34 @@ export function AuthProvider({ children }) {
       })
       const data = await res.json()
       if (res.ok) {
-        setResults(prev => [data, ...prev].slice(0, 50))
+        setResults(prev => [data.result, ...prev].slice(0, 50))
+        if (data.userUpdate) {
+          const updatedUser = { ...user, ...data.userUpdate };
+          setUser(updatedUser);
+          localStorage.setItem('typeracer_user', JSON.stringify(updatedUser));
+        }
+        if (data.newBadges && data.newBadges.length > 0) {
+          confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+          data.newBadges.forEach(badgeId => {
+            const badge = BADGES_DATA[badgeId];
+            if (badge) {
+              toast(`Badge Earned: ${badge.name}`, {
+                icon: badge.icon,
+                duration: 5000,
+                style: {
+                  borderRadius: '10px',
+                  background: 'var(--bg-lighter)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--primary)'
+                },
+              });
+            }
+          });
+        }
       }
     } catch (err) {
       console.error('Failed to save result', err)

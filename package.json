@@ -6,20 +6,22 @@
   "scripts": {
     "dev": "concurrently \"node server.js\" \"vite\"",
     "start:frontend": "vite",
-    "start:backend": "node server.js",  
+    "start:backend": "node server.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "canvas-confetti": "^1.9.4",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.1",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "react-hot-toast": "^2.6.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

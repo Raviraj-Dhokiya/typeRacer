@@ -9,6 +9,9 @@ import jwt from 'jsonwebtoken';
 import User from './src/server/models/User.js';
 import Result from './src/server/models/Result.js';
 
+// Utils
+import { evaluateBadges, calculateXP, calculateLevel } from './src/server/badgeEngine.js';
+
 dotenv.config();
 
 const app = express();
@@ -63,7 +66,7 @@ app.post('/api/auth/register', async (req, res) => {
     
     res.json({
       token,
-      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, createdAt: user.createdAt }
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, createdAt: user.createdAt, badges: user.badges || [], level: user.level || 1, xp: user.xp || 0 }
     });
   } catch (error) {
     console.error(error);
@@ -85,7 +88,7 @@ app.post('/api/auth/login', async (req, res) => {
     
     res.json({
       token,
-      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, createdAt: user.createdAt }
+      user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, createdAt: user.createdAt, badges: user.badges || [], level: user.level || 1, xp: user.xp || 0 }
     });
   } catch (error) {
     console.error(error);
@@ -105,7 +108,31 @@ app.post('/api/results', authMiddleware, async (req, res) => {
       mode
     });
     await result.save();
-    res.json(result);
+
+    // Fetch all user results for badge evaluation
+    const allResults = await Result.find({ userId: req.user.id });
+    const user = await User.findById(req.user.id);
+    
+    // Evaluate badges
+    const newBadges = evaluateBadges(user, result, allResults);
+    
+    // Update XP and Level
+    const earnedXp = calculateXP(result);
+    user.xp = (user.xp || 0) + earnedXp;
+    user.level = calculateLevel(user.xp);
+    
+    if (newBadges.length > 0) {
+      if (!user.badges) user.badges = [];
+      user.badges.push(...newBadges);
+    }
+    
+    await user.save();
+
+    res.json({ 
+      result, 
+      newBadges, 
+      userUpdate: { xp: user.xp, level: user.level, badges: user.badges } 
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });

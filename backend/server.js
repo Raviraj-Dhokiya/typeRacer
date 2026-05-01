@@ -6,11 +6,11 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 // Models
-import User from './src/server/models/User.js';
-import Result from './src/server/models/Result.js';
+import User from './models/User.js';
+import Result from './models/Result.js';
 
 // Utils
-import { evaluateBadges, calculateXP, calculateLevel } from './src/server/badgeEngine.js';
+import { evaluateBadges, calculateXP, calculateLevel } from './badgeEngine.js';
 
 dotenv.config();
 

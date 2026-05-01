@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"node server.js\" \"vite\"",
+    "dev": "concurrently \"node backend/server.js\" \"vite\"",
     "start:frontend": "vite",
-    "start:backend": "node server.js",
+    "start:backend": "node backend/server.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

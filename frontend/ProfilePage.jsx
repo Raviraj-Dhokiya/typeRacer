@@ -20,6 +20,7 @@ function formatDate(iso) {
 export default function ProfilePage({ onBack }) {
   const { user, getResults, logout } = useAuth()
   const [activeTab, setActiveTab] = useState('stats')
+  const [badgeFilter, setBadgeFilter] = useState('All') // 'All', 'Earned', 'Locked'
   const results = getResults()
 
   // Aggregate stats
@@ -199,36 +200,105 @@ export default function ProfilePage({ onBack }) {
 
       {activeTab === 'badges' && (
         <div className="profile-panel">
-          <h3 className="panel-title">Your Badges ({user.badges?.length || 0} Earned)</h3>
-          <div className="badges-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px', marginTop: '16px' }}>
-            {Object.values(BADGES_DATA).map(badge => {
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+            {(() => {
+              const validEarnedCount = (user.badges || []).filter(id => BADGES_DATA[id]).length;
+              return <h3 className="panel-title" style={{ margin: 0 }}>Your Badges ({validEarnedCount} Earned)</h3>;
+            })()}
+            <div className="badge-filters" style={{ display: 'flex', gap: '8px', backgroundColor: 'var(--bg)', padding: '6px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+              {['All', 'Earned', 'Locked'].map(f => (
+                <button
+                  key={f}
+                  onClick={() => setBadgeFilter(f)}
+                  style={{
+                    background: badgeFilter === f ? '#10b981' : 'transparent',
+                    color: badgeFilter === f ? '#ffffff' : 'var(--text)',
+                    border: 'none',
+                    padding: '6px 16px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: badgeFilter === f ? 'bold' : '500',
+                    fontSize: '0.85rem',
+                    transition: 'all 0.2s',
+                    opacity: badgeFilter === f ? 1 : 0.7
+                  }}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {(() => {
+            const allBadges = Object.values(BADGES_DATA);
+            const filteredBadges = allBadges.filter(badge => {
               const isEarned = user.badges?.includes(badge.id);
+              if (badgeFilter === 'Earned') return isEarned;
+              if (badgeFilter === 'Locked') return !isEarned;
+              return true;
+            });
+
+            const difficulties = ['Easy', 'Medium', 'Hard', 'Legendary'];
+            const diffColors = { Easy: '#10b981', Medium: '#f59e0b', Hard: '#ef4444', Legendary: '#a855f7' };
+
+            if (filteredBadges.length === 0) {
               return (
-                <div key={badge.id} className={`badge-card ${isEarned ? 'earned' : 'locked'}`} style={{
-                  padding: '16px',
-                  borderRadius: '12px',
-                  backgroundColor: 'var(--bg-lighter)',
-                  border: isEarned ? '2px solid var(--primary)' : '2px dashed var(--border)',
-                  opacity: isEarned ? 1 : 0.5,
-                  textAlign: 'center',
-                  transition: 'all 0.3s ease'
-                }}>
-                  <div className="badge-icon" style={{ fontSize: '2.5rem', marginBottom: '8px', filter: isEarned ? 'none' : 'grayscale(100%)' }}>
-                    {badge.icon}
-                  </div>
-                  <div className="badge-name" style={{ fontWeight: 'bold', marginBottom: '4px', color: isEarned ? 'var(--text)' : 'var(--text-muted)' }}>
-                    {badge.name}
-                  </div>
-                  <div className="badge-desc" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    {badge.description}
-                  </div>
-                  <div className="badge-category" style={{ fontSize: '0.75rem', marginTop: '8px', color: 'var(--primary)', fontWeight: '600', textTransform: 'uppercase' }}>
-                    {badge.category}
+                <div className="profile-empty" style={{ marginTop: '40px' }}>
+                  <div className="profile-empty-icon">🏅</div>
+                  <p>No badges found for this filter.</p>
+                </div>
+              );
+            }
+
+            return difficulties.map(diff => {
+              const badgesInDiff = filteredBadges.filter(b => b.difficulty === diff);
+              if (badgesInDiff.length === 0) return null;
+
+              return (
+                <div key={diff} style={{ marginBottom: '40px' }}>
+                  <h4 style={{ 
+                    color: diffColors[diff], 
+                    borderBottom: `2px solid ${diffColors[diff]}`, 
+                    paddingBottom: '8px', 
+                    marginBottom: '16px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px'
+                  }}>
+                    {diff} Tier
+                  </h4>
+                  <div className="badges-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+                    {badgesInDiff.map(badge => {
+                      const isEarned = user.badges?.includes(badge.id);
+                      return (
+                        <div key={badge.id} className={`badge-card ${isEarned ? 'earned' : 'locked'}`} style={{
+                          padding: '16px',
+                          borderRadius: '12px',
+                          backgroundColor: 'var(--bg-lighter)',
+                          border: isEarned ? '2px solid var(--primary)' : '2px dashed var(--border)',
+                          opacity: isEarned ? 1 : 0.5,
+                          textAlign: 'center',
+                          transition: 'all 0.3s ease'
+                        }}>
+                          <div className="badge-icon" style={{ fontSize: '2.5rem', marginBottom: '8px', filter: isEarned ? 'none' : 'grayscale(100%)' }}>
+                            {badge.icon}
+                          </div>
+                          <div className="badge-name" style={{ fontWeight: 'bold', marginBottom: '4px', color: isEarned ? 'var(--text)' : 'var(--text-muted)' }}>
+                            {badge.name}
+                          </div>
+                          <div className="badge-desc" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                            {badge.description}
+                          </div>
+                          <div className="badge-category" style={{ fontSize: '0.75rem', marginTop: '8px', color: diffColors[badge.difficulty], fontWeight: '800', textTransform: 'uppercase' }}>
+                            {badge.category}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
-            })}
-          </div>
+            });
+          })()}
         </div>
       )}
     </div>

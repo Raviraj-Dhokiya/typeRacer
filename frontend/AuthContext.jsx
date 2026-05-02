@@ -39,6 +39,11 @@ export function AuthProvider({ children }) {
       const data = await res.json()
       if (!res.ok) return { error: data.error || 'Registration failed' }
       
+      if (data.requireOtp) {
+        toast.success('OTP sent to your email!')
+        return { success: true, requireOtp: true, email: data.email }
+      }
+      
       localStorage.setItem('typeracer_token', data.token)
       localStorage.setItem('typeracer_user', JSON.stringify(data.user))
       setToken(data.token)
@@ -58,7 +63,13 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ email, password })
       })
       const data = await res.json()
-      if (!res.ok) return { error: data.error || 'Login failed' }
+      if (!res.ok) {
+        if (data.requireOtp) {
+          toast.success('A new OTP has been sent to your email!')
+          return { error: data.error, requireOtp: true, email: data.email }
+        }
+        return { error: data.error || 'Login failed' }
+      }
       
       localStorage.setItem('typeracer_token', data.token)
       localStorage.setItem('typeracer_user', JSON.stringify(data.user))
@@ -146,8 +157,29 @@ export function AuthProvider({ children }) {
     return results
   }
 
+  const verifyOtp = async (email, otp) => {
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp })
+      })
+      const data = await res.json()
+      if (!res.ok) return { error: data.error || 'Verification failed' }
+      
+      localStorage.setItem('typeracer_token', data.token)
+      localStorage.setItem('typeracer_user', JSON.stringify(data.user))
+      setToken(data.token)
+      setUser(data.user)
+      toast.success('Email verified successfully!')
+      return { success: true }
+    } catch (err) {
+      return { error: 'Network error' }
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, register, login, logout, saveResult, getResults }}>
+    <AuthContext.Provider value={{ user, register, login, logout, saveResult, getResults, verifyOtp }}>
       {children}
     </AuthContext.Provider>
   )

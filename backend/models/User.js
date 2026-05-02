@@ -8,6 +8,9 @@ const userSchema = new mongoose.Schema({
   badges:   { type: [String], default: [] }, // Array of badge IDs
   level:    { type: Number, default: 1 },
   xp:       { type: Number, default: 0 },
+  isVerified: { type: Boolean, default: false },
+  otp:        { type: String },
+  otpExpires: { type: Date },
   createdAt: { type: Date, default: Date.now }
 });
 

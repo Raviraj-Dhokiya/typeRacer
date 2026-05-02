@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 
 // Models
 import User from './models/User.js';
@@ -45,21 +46,84 @@ const authMiddleware = (req, res, next) => {
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    let user = await User.findOne({ $or: [{ email }, { username }] });
+    
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60000); // 10 mins
+
+    let user = await User.findOne({ email });
     if (user) {
-      return res.status(400).json({ error: 'User already exists with this email or username' });
+      if (user.isVerified) {
+        return res.status(400).json({ error: 'User already exists with this email' });
+      }
+      // Update existing unverified user
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+      user.username = username;
+      user.otp = otp;
+      user.otpExpires = otpExpires;
+      user.avatar = username.charAt(0).toUpperCase();
+      await user.save();
+    } else {
+      let usernameCheck = await User.findOne({ username });
+      if (usernameCheck) {
+         return res.status(400).json({ error: 'Username already taken' });
+      }
+      
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      
+      user = new User({
+        username,
+        email,
+        password: hashedPassword,
+        avatar: username.charAt(0).toUpperCase(),
+        isVerified: false,
+        otp,
+        otpExpires
+      });
+      await user.save();
     }
     
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
+          pass: process.env.EMAIL_PASS || 'dummy_password'
+        }
+      });
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
+        to: email,
+        subject: 'Your TypeRacer Verification OTP',
+        text: `Your verification OTP is: ${otp}. It will expire in 10 minutes.`
+      });
+      console.log(`✅ OTP sent to ${email}: ${otp}`); // For debugging without real email
+    } catch (emailErr) {
+      console.error("❌ Email failed to send. Check credentials. OTP is:", otp);
+    }
     
-    user = new User({
-      username,
-      email,
-      password: hashedPassword,
-      avatar: username.charAt(0).toUpperCase()
-    });
+    res.json({ message: 'OTP sent to your email. Please verify to continue.', requireOtp: true, email: user.email });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// 1.5 Verify OTP
+app.post('/api/auth/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: 'User not found' });
+    if (user.isVerified) return res.status(400).json({ error: 'User already verified' });
     
+    if (user.otp !== otp) return res.status(400).json({ error: 'Invalid OTP' });
+    if (user.otpExpires < new Date()) return res.status(400).json({ error: 'OTP expired' });
+    
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpires = undefined;
     await user.save();
     
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
@@ -80,6 +144,34 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
+    
+    if (!user.isVerified) {
+      // Regenerate OTP and send if not verified
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      user.otp = otp;
+      user.otpExpires = new Date(Date.now() + 10 * 60000);
+      await user.save();
+      
+      try {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
+            pass: process.env.EMAIL_PASS || 'dummy_password'
+          }
+        });
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
+          to: email,
+          subject: 'Your TypeRacer Verification OTP',
+          text: `Your verification OTP is: ${otp}. It will expire in 10 minutes.`
+        });
+        console.log(`✅ OTP sent to ${email}: ${otp}`); // For debugging
+      } catch (emailErr) {
+        console.error("❌ Email failed to send. Check credentials. OTP is:", otp);
+      }
+      return res.status(400).json({ error: 'Please verify your email first. A new OTP has been sent.', requireOtp: true, email: user.email });
+    }
     
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });

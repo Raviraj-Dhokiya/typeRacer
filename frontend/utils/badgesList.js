@@ -73,11 +73,19 @@ export const BADGES_DATA = {
 
 
 export const LEVELS = [
+  { level: 1, title: 'Newbie', color: '#888' },
+  { level: 2, title: 'Rookie', color: '#9e9e9e' },
+  { level: 3, title: 'Beginner', color: '#b0bec5' },
+  { level: 4, title: 'Amateur', color: '#cfd8dc' },
   { level: 5, title: 'Bronze Typist', color: '#cd7f32' },
+  { level: 10, title: 'Iron Typist', color: '#a19d94' },
   { level: 15, title: 'Silver Typist', color: '#c0c0c0' },
+  { level: 20, title: 'Steel Typist', color: '#78909c' },
   { level: 25, title: 'Gold Typist', color: '#ffd700' },
   { level: 35, title: 'Platinum Typist', color: '#e5e4e2' },
-  { level: 50, title: 'Diamond Typist', color: '#b9f2ff' }
+  { level: 50, title: 'Diamond Typist', color: '#b9f2ff' },
+  { level: 75, title: 'Master Typist', color: '#9c27b0' },
+  { level: 100, title: 'God Tier', color: '#f44336' }
 ];
 
 export function getTitleForLevel(level) {

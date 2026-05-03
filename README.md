@@ -1,39 +1,48 @@
-# TypeRacer - Advanced Typing Speed Test ⌨️🚀
+# TypeRacer — Advanced Typing Speed Test ⌨️🚀
 
-An advanced, feature-rich Typing Speed Test application built with the MERN stack (MongoDB, Express, React, Node.js). It goes beyond traditional typing tests by incorporating gamification, detailed analytics, user authentication, and a global leaderboard to make typing practice engaging and competitive.
+An advanced, feature-rich Typing Speed Test application built with the **MERN stack** (MongoDB, Express, React, Node.js). It goes beyond traditional typing tests by incorporating gamification, detailed analytics, secure email verification, and a global leaderboard to make typing practice engaging and competitive.
+
+> 🌐 **Live Demo:** Frontend on [Vercel](https://vercel.com) · Backend API on [Render](https://render.com)
 
 ---
 
 ## ✨ Features & Implemented Functions
 
 ### 1. 🔐 Secure Authentication & User Management
-* **User Registration & Login:** Secure password hashing using `bcryptjs` and session management via JWT.
-* **Email OTP Verification:** Users must verify their email with a 6-digit OTP (powered by `nodemailer`) to activate their account.
-* **Context API State:** `AuthContext` manages user sessions globally across the frontend.
+- **User Registration & Login:** Passwords hashed with `bcryptjs`; sessions managed via JWT (7-day expiry).
+- **Email OTP Verification:** A 6-digit OTP is generated on signup and sent via **Brevo** (Sendinblue) transactional email API. Unverified users cannot log in.
+- **Fire-and-Forget Email:** The server responds immediately to the client and dispatches the OTP email in the background — eliminating signup latency.
+- **Context API State:** `AuthContext` manages user sessions globally across the frontend, persisting the JWT in `localStorage`.
 
 ### 2. ⚡ Core Typing Engine
-* **Real-time Calculations:** Live updates for WPM (Words Per Minute), Accuracy, Time Left, and Error counts.
-* **Multiple Modes:** Practice in 3 different modes:
-  * **Common Words:** Standard typing practice.
-  * **Code:** Practice programming syntax and symbols.
-  * **Quotes:** Type full sentences with punctuation.
-* **Flexible Timers:** Select between 15s, 30s, 60s, or 120s sessions.
-* **Live Feedback:** Character-by-character visual feedback (correct, incorrect, caret blinking).
+- **Real-time Calculations:** Live updates for WPM (Words Per Minute), Accuracy, Time Left, and Error count.
+- **Multiple Modes:** Choose from 3 practice modes:
+  - **Common Words** — Standard everyday vocabulary.
+  - **Code** — Programming syntax and symbols.
+  - **Quotes** — Full sentences with punctuation.
+- **Flexible Timers:** 15s, 30s, 60s, or 120s sessions.
+- **Live Feedback:** Character-by-character visual feedback — correct (green), incorrect (red), with a blinking caret.
+- **Auto-Save Results:** Test results are automatically saved to the database on completion (no manual save button needed).
+- **Confetti Celebration:** `canvas-confetti` fires on test completion for a satisfying reward effect.
 
 ### 3. 🎮 Gamification: Badges, XP & Leveling
-* **Robust Badge Engine:** A backend logic (`badgeEngine.js`) that automatically awards users with badges based on milestones (e.g., hitting 100 WPM, 100% accuracy, maintaining streaks, or playing at midnight).
-* **XP System:** Users earn XP based on test performance.
-* **Dynamic Ranks:** 100+ Levels with custom titles (e.g., Newbie, Rookie, Bronze Typist, Master Typist, God Tier).
+- **Robust Badge Engine:** Backend `badgeEngine.js` automatically evaluates and awards **30+ unique badges** based on milestones — e.g., hitting 100 WPM, achieving 100% accuracy, playing at midnight, or maintaining streaks.
+- **Tiered Difficulty:** Badges are categorized as Easy, Medium, Hard, and Legendary.
+- **XP System:** Users earn XP based on test performance (WPM, accuracy, time).
+- **Dynamic Rank Titles:** 100+ levels with custom titles (Newbie → Rookie → Bronze Typist → Master Typist → God Tier).
 
 ### 4. 📊 Detailed User Profile & Analytics
-* **Performance Charts:** Integrated `recharts` to display a beautiful Line Chart for WPM/Accuracy history and a Pie Chart for Mode Breakdown.
-* **Activity Heatmap:** A GitHub-style 12-month contribution graph that highlights daily typing activity intensity.
-* **Test History:** A comprehensive table showing all past test results.
-* **Badge Showcase:** A dedicated tab to view earned and locked badges, sorted by difficulty tiers (Easy, Medium, Hard, Legendary).
+- **Performance Charts:** `recharts` powers a WPM/Accuracy Line Chart and a Mode Breakdown Pie Chart.
+- **Activity Heatmap:** A GitHub-style **30-day contribution graph** that visualizes daily typing activity intensity.
+- **Test History:** A comprehensive table of all past test results (WPM, accuracy, mode, date).
+- **Badge Showcase:** A dedicated tab to browse earned and locked badges, grouped by difficulty tier with filter controls.
 
 ### 5. 🌍 Global Leaderboard
-* **Competitive Rankings:** A dedicated Leaderboard page fetching top users from the database.
-* **Skill-based Sorting:** Users are ranked globally based on their total XP and Level.
+- **Competitive Rankings:** Fetches top 50 users from the database.
+- **XP-based Sorting:** Users are ranked globally by total XP and Level.
+
+### 6. 🔔 In-App Notifications
+- **React Hot Toast:** Non-intrusive toast notifications for login success, errors, badge unlocks, and OTP status.
 
 ---
 
@@ -44,60 +53,127 @@ typeRacer/
 ├── backend/
 │   ├── models/
 │   │   ├── Result.js            # Mongoose schema for test results
-│   │   └── User.js              # Mongoose schema for users (auth, badges, xp)
-│   ├── badgeEngine.js           # Core logic for evaluating XP, levels, and unlocking badges
-│   └── server.js                # Express Server setup & API Routes (/auth, /results, /leaderboard)
+│   │   └── User.js              # Mongoose schema for users (auth, badges, xp, otp)
+│   ├── badgeEngine.js           # Core logic for evaluating XP, levels & unlocking badges
+│   └── server.js                # Express server, REST API (/auth, /results, /leaderboard)
 ├── frontend/
 │   ├── assets/                  # Static assets
 │   ├── components/
 │   │   ├── ResultsPanel.jsx     # Post-test summary screen
 │   │   ├── StatCard.jsx         # UI component for individual stats (WPM, Acc, etc.)
-│   │   ├── TextDisplay.jsx      # Rendering logic for typing text and caret
-│   │   └── UserMenu.jsx         # Profile/Logout dropdown in the header
+│   │   ├── TextDisplay.jsx      # Typing text rendering & caret logic
+│   │   └── UserMenu.jsx         # Profile / Logout dropdown in the header
 │   ├── utils/
+│   │   ├── api.js               # Centralized API_BASE URL (supports Vite proxy & production)
 │   │   ├── badgesList.js        # Data definition for all 30+ badges and Level Titles
 │   │   └── textUtils.js         # Word generation and WPM/Accuracy formulas
-│   ├── App.jsx                  # Main routing, state management, and primary View
-│   ├── App.css                  # Custom styling and animations
-│   ├── AuthContext.jsx          # React Context for authentication
-│   ├── AuthModal.jsx            # Modal UI for Login, Signup, and OTP input
-│   ├── LeaderboardPage.jsx      # Global Leaderboard View
-│   ├── ProfilePage.jsx          # Advanced dashboard (Stats, Heatmap, History, Badges)
-│   ├── index.css                # Tailwind CSS imports
+│   ├── App.jsx                  # Main routing, state management & typing engine
+│   ├── App.css                  # Custom styling, dark theme & animations
+│   ├── AuthContext.jsx          # React Context for authentication state
+│   ├── AuthModal.jsx            # Modal UI for Login, Signup & OTP input
+│   ├── LeaderboardPage.jsx      # Global Leaderboard view
+│   ├── ProfilePage.jsx          # User dashboard (Stats, Heatmap, History, Badges)
+│   ├── index.css                # Tailwind CSS v4 base imports
 │   └── main.jsx                 # React root render
-├── .env                         # Secrets (Mongo URI, JWT Secret, Email Config)
-├── package.json                 # Project dependencies & Concurrent Dev Script
-└── vite.config.js               # Vite frontend configuration
+├── .env                         # Secrets (see Environment Variables section)
+├── .gitignore                   # Excludes .env, node_modules, dist
+├── package.json                 # Monorepo dependencies & concurrent dev scripts
+├── vite.config.js               # Vite config with /api proxy to backend
+└── eslint.config.js             # ESLint configuration
 ```
 
 ---
 
 ## 🛠️ Tech Stack
 
-* **Frontend:** React.js, Vite, Tailwind CSS, Recharts
-* **Backend:** Node.js, Express.js
-* **Database:** MongoDB (via Mongoose)
-* **Auth & Security:** JSON Web Tokens (JWT), bcryptjs, Nodemailer
+| Layer | Technology |
+|---|---|
+| **Frontend** | React 19, Vite 8, Tailwind CSS v4 |
+| **Charts & UI** | Recharts, React Hot Toast, canvas-confetti |
+| **Backend** | Node.js, Express 5 |
+| **Database** | MongoDB Atlas (via Mongoose) |
+| **Auth & Security** | JWT (`jsonwebtoken`), bcryptjs |
+| **Email** | Brevo (Sendinblue) REST API |
+| **Dev Tooling** | concurrently, ESLint |
+| **Deployment** | Vercel (frontend) + Render (backend) |
+
+---
 
 ## 🚀 Running Locally
 
-1. **Install Dependencies:**
-   ```bash
-   npm install
-   ```
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-2. **Environment Variables:**
-   Ensure your `.env` file at the root contains:
-   ```env
-   MONGO_URI=mongodb://127.0.0.1:27017/typeracer
-   JWT_SECRET=your_jwt_secret
-   PORT=5000
-   EMAIL_USER=your_email@gmail.com
-   EMAIL_PASS=your_app_password
-   ```
+### 2. Configure Environment Variables
+Create a `.env` file at the project root:
+```env
+# MongoDB Atlas connection string
+MONGO_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/typeracer
 
-3. **Start Development Servers (Frontend + Backend concurrently):**
-   ```bash
-   npm run dev
-   ```
-   The frontend will run on `http://localhost:5173` and the backend API on `http://localhost:5000`.
+# JWT signing secret
+JWT_SECRET=your_strong_jwt_secret
+
+# Backend port (default: 5000)
+PORT=5000
+
+# Brevo transactional email
+BREVO_API_KEY=your_brevo_api_key
+EMAIL_USER=your_sender_email@example.com
+
+# Frontend API URL (leave empty for local dev, set for production)
+# VITE_API_URL=https://your-render-backend.onrender.com
+```
+
+> **Note:** `EMAIL_USER` & `EMAIL_PASS` (Gmail) are kept for compatibility but **Brevo** (`BREVO_API_KEY`) is the active email provider.
+
+### 3. Start Development Servers
+```bash
+npm run dev
+```
+This runs the **Express backend** and **Vite frontend** concurrently via `concurrently`.
+
+| Service | URL |
+|---|---|
+| Frontend | `http://localhost:5173` |
+| Backend API | `http://localhost:5000` |
+
+> Vite proxies all `/api` requests to `localhost:5000` automatically in development.
+
+---
+
+## ☁️ Deployment
+
+### Frontend → Vercel
+1. Push the repo to GitHub.
+2. Import the project in [Vercel](https://vercel.com).
+3. Set **Root Directory** to `/` (monorepo root).
+4. Add environment variable: `VITE_API_URL=https://your-render-backend.onrender.com`
+5. Deploy.
+
+### Backend → Render
+1. Create a new **Web Service** on [Render](https://render.com).
+2. Set **Build Command:** `npm install`
+3. Set **Start Command:** `node backend/server.js`
+4. Add all environment variables (`MONGO_URI`, `JWT_SECRET`, `PORT`, `BREVO_API_KEY`, `EMAIL_USER`).
+5. Deploy.
+
+---
+
+## 🔌 API Endpoints
+
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | ❌ | Register user, trigger OTP email |
+| `POST` | `/api/auth/verify-otp` | ❌ | Verify OTP and receive JWT |
+| `POST` | `/api/auth/login` | ❌ | Login (verified users only) |
+| `POST` | `/api/results` | ✅ JWT | Save test result, evaluate badges & XP |
+| `GET` | `/api/results` | ✅ JWT | Fetch authenticated user's result history |
+| `GET` | `/api/leaderboard` | ❌ | Fetch top 50 users by XP |
+
+---
+
+## 📄 License
+
+MIT — feel free to fork, star ⭐, and build on top of it!

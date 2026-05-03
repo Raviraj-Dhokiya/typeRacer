@@ -151,36 +151,34 @@ app.post('/api/auth/login', async (req, res) => {
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
     
     if (!user.isVerified) {
-      // Regenerate OTP and send if not verified
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       user.otp = otp;
       user.otpExpires = new Date(Date.now() + 10 * 60000);
       await user.save();
-      
+
       // Respond immediately — don't wait for email
-      return res.status(400).json({ error: 'Please verify your email first. A new OTP has been sent.', requireOtp: true, email: user.email });
-    }
-    // Send email in background (fire-and-forget) for login-triggered OTP
-    const sendLoginOtp = async () => {
-      try {
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
-            pass: process.env.EMAIL_PASS || 'dummy_password'
-          }
-        });
-        await transporter.sendMail({
-          from: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
-          to: email,
-          subject: 'Your TypeRacer Verification OTP',
-          text: `Your verification OTP is: ${otp}. It will expire in 10 minutes.`
-        });
-        console.log(`✅ OTP sent to ${email}`);
-      } catch (e) { console.error('❌ Email failed. OTP is:', otp); }
-    };
-    sendLoginOtp();
-    return;
+      res.status(400).json({ error: 'Please verify your email first. A new OTP has been sent.', requireOtp: true, email: user.email });
+
+      // Send email in background (fire-and-forget)
+      ;(async () => {
+        try {
+          const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+              user: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
+              pass: process.env.EMAIL_PASS || 'dummy_password'
+            }
+          });
+          await transporter.sendMail({
+            from: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
+            to: email,
+            subject: 'Your TypeRacer Verification OTP',
+            text: `Your verification OTP is: ${otp}. It will expire in 10 minutes.`
+          });
+          console.log(`✅ OTP sent to ${email}`);
+        } catch (e) { console.error('❌ Email failed. OTP is:', otp); }
+      })();
+      return;
     }
     
     const isMatch = await bcrypt.compare(password, user.password);

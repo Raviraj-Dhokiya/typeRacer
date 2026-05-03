@@ -965,11 +965,15 @@
 
 .profile-tabs {
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-bottom: 20px;
 }
 
 .profile-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 9px 22px;
   border-radius: 5px;
   border: 1px solid var(--border);

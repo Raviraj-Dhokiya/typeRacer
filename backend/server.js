@@ -242,6 +242,20 @@ app.get('/api/results', authMiddleware, async (req, res) => {
   }
 });
 
+// 5. Get Global Leaderboard
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    const topUsers = await User.find({ isVerified: true })
+      .select('username avatar level xp createdAt badges')
+      .sort({ xp: -1 })
+      .limit(50);
+    res.json(topUsers);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

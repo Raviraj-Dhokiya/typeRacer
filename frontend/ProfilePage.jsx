@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext'
 import { BADGES_DATA, getTitleForLevel, getXPProgress } from './utils/badgesList'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
 function StatBox({ label, value, color }) {
   return (
@@ -240,48 +241,67 @@ export default function ProfilePage({ onBack }) {
         <div className="profile-panel">
           {recent.length > 0 ? (
             <>
-              <h3 className="panel-title">WPM Trend (last {recent.length} tests)</h3>
-              {/* Sparkline chart */}
-              <div className="sparkline-wrap">
-                {recent.map((r, i) => (
-                  <div key={r.id} className="spark-col">
-                    <div className="spark-bar-wrap">
-                      <div
-                        className="spark-bar"
-                        style={{ height: `${Math.round((r.wpm / maxWPM) * 100)}%` }}
-                        title={`${r.wpm} WPM`}
-                      />
-                    </div>
-                    <div className="spark-label">{r.wpm}</div>
-                  </div>
-                ))}
+              <h3 className="panel-title">WPM Trend (History)</h3>
+              <div style={{ width: '100%', height: 250, backgroundColor: 'var(--bg-lighter)', padding: '16px', borderRadius: '12px', marginTop: '16px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={[...results].reverse().map((r, i) => ({ name: `T${i + 1}`, wpm: r.wpm, acc: r.accuracy }))}>
+                    <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px' }} />
+                    <Line type="monotone" dataKey="wpm" name="WPM" stroke="#3b82f6" strokeWidth={3} dot={{ r: 3, fill: '#3b82f6' }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="acc" name="Accuracy %" stroke="#10b981" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
 
               {/* Mode breakdown */}
               <h3 className="panel-title" style={{ marginTop: 32 }}>Mode Breakdown</h3>
-              <div className="mode-breakdown">
-                {['common', 'code', 'quotes'].map(m => {
-                  const modeResults = results.filter(r => r.mode === m)
-                  const modeAvg = modeResults.length
-                    ? Math.round(modeResults.reduce((s, r) => s + r.wpm, 0) / modeResults.length)
-                    : null
-                  return (
-                    <div key={m} className="mode-breakdown-row">
-                      <div className="mode-breakdown-name">
-                        {m === 'common' ? '📝 Common Words' : m === 'code' ? '💻 Code' : '💬 Quotes'}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'center', backgroundColor: 'var(--bg-lighter)', padding: '16px', borderRadius: '12px', marginTop: '16px' }}>
+                <div style={{ width: '250px', height: '250px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Common', value: results.filter(r => r.mode === 'common').length, color: '#3b82f6' },
+                          { name: 'Code', value: results.filter(r => r.mode === 'code').length, color: '#10b981' },
+                          { name: 'Quotes', value: results.filter(r => r.mode === 'quotes').length, color: '#f59e0b' }
+                        ].filter(d => d.value > 0)}
+                        cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value"
+                      >
+                        {
+                          [
+                            { name: 'Common', value: results.filter(r => r.mode === 'common').length, color: '#3b82f6' },
+                            { name: 'Code', value: results.filter(r => r.mode === 'code').length, color: '#10b981' },
+                            { name: 'Quotes', value: results.filter(r => r.mode === 'quotes').length, color: '#f59e0b' }
+                          ].filter(d => d.value > 0).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))
+                        }
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  {['common', 'code', 'quotes'].map(m => {
+                    const modeResults = results.filter(r => r.mode === m)
+                    if (modeResults.length === 0) return null;
+                    const modeAvg = Math.round(modeResults.reduce((s, r) => s + r.wpm, 0) / modeResults.length)
+                    const colors = { common: '#3b82f6', code: '#10b981', quotes: '#f59e0b' };
+                    return (
+                      <div key={m} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: colors[m] }}></div>
+                          <span style={{ textTransform: 'capitalize', fontWeight: 'bold' }}>{m} Words</span>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>({modeResults.length} tests)</span>
+                        </div>
+                        <div style={{ fontWeight: 'bold', color: 'var(--text)' }}>
+                          {modeAvg} WPM avg
+                        </div>
                       </div>
-                      <div className="mode-breakdown-bar-wrap">
-                        <div
-                          className="mode-breakdown-bar"
-                          style={{ width: modeAvg ? `${Math.round((modeAvg / (bestWPM || 1)) * 100)}%` : '0%' }}
-                        />
-                      </div>
-                      <div className="mode-breakdown-val">
-                        {modeAvg !== null ? `${modeAvg} WPM` : '—'}
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </>
           ) : (

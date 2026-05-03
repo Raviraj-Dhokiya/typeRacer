@@ -5,6 +5,7 @@ import './App.css'
 import { useAuth }       from './AuthContext'
 import AuthModal         from './AuthModal'
 import ProfilePage       from './ProfilePage'
+import LeaderboardPage   from './LeaderboardPage'
 import StatCard          from './components/StatCard'
 import TextDisplay       from './components/TextDisplay'
 import ResultsPanel      from './components/ResultsPanel'
@@ -130,8 +131,9 @@ export default function App() {
   /* ── Auto focus ── */
   useEffect(() => { focusInput() }, [focusInput])
 
-  /* ── Profile view ── */
+  /* ── Views ── */
   if (view === 'profile') return <ProfilePage onBack={() => setView('test')} />
+  if (view === 'leaderboard') return <LeaderboardPage onBack={() => setView('test')} />
 
   /* ── New text helper ── */
   const loadNewText = () => {
@@ -278,6 +280,9 @@ export default function App() {
             </button>
             <button id="new-text-btn" className="btn btn-ghost" onClick={loadNewText}>
               New Text
+            </button>
+            <button id="leaderboard-btn" className="btn btn-ghost" onClick={() => setView('leaderboard')}>
+              🌍 Leaderboard
             </button>
             {user && (
               <button id="profile-btn" className="btn btn-ghost" onClick={() => setView('profile')}>

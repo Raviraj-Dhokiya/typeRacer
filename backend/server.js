@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { Resend } from 'resend';
+import * as Brevo from '@getbrevo/brevo';
 
 // Models
 import User from './models/User.js';
@@ -27,23 +27,24 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB connected successfully'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-// Resend email helper
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Brevo email helper
 const sendOtpEmail = async (email, otp) => {
-  if (!process.env.RESEND_API_KEY) {
-    console.log(`⚠️ RESEND_API_KEY not set. OTP for ${email}: ${otp}`);
+  if (!process.env.BREVO_API_KEY) {
+    console.log(`⚠️ BREVO_API_KEY not set. OTP for ${email}: ${otp}`);
     return;
   }
-  const { error } = await resend.emails.send({
-    from: 'TypeRacer <onboarding@resend.dev>',
-    to: [email],
-    subject: 'Your TypeRacer Verification OTP',
-    text: `Your verification OTP is: ${otp}. It will expire in 10 minutes.`
-  });
-  if (error) {
-    console.error('❌ Email failed:', error.message, '| OTP is:', otp);
-  } else {
+  try {
+    const apiInstance = new Brevo.TransactionalEmailsApi();
+    apiInstance.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY;
+    await apiInstance.sendTransacEmail({
+      sender: { name: 'TypeRacer', email: process.env.EMAIL_USER || 'ravirajdhokiya9@gmail.com' },
+      to: [{ email }],
+      subject: 'Your TypeRacer Verification OTP',
+      textContent: `Your verification OTP is: ${otp}. It will expire in 10 minutes.`
+    });
     console.log(`✅ OTP sent to ${email}`);
+  } catch (e) {
+    console.error('❌ Email failed:', e.message, '| OTP is:', otp);
   }
 };
 

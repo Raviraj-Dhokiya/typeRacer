@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import confetti from 'canvas-confetti'
 import { BADGES_DATA } from './utils/badgesList'
+import { API_BASE } from './utils/api'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
@@ -31,7 +32,7 @@ export function AuthProvider({ children }) {
 
   const register = async (username, email, password) => {
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password })
@@ -57,7 +58,7 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -94,7 +95,7 @@ export function AuthProvider({ children }) {
   const saveResult = async (result) => {
     if (!token) return
     try {
-      const res = await fetch('/api/results', {
+      const res = await fetch(`${API_BASE}/api/results`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -141,7 +142,7 @@ export function AuthProvider({ children }) {
   const fetchResults = async () => {
     if (!token) return
     try {
-      const res = await fetch('/api/results', {
+      const res = await fetch(`${API_BASE}/api/results`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       const data = await res.json()
@@ -159,7 +160,7 @@ export function AuthProvider({ children }) {
 
   const verifyOtp = async (email, otp) => {
     try {
-      const res = await fetch('/api/auth/verify-otp', {
+      const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp })

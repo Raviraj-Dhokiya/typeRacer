@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { getTitleForLevel } from './utils/badgesList';
+import { API_BASE } from './utils/api';
 
 export default function LeaderboardPage({ onBack }) {
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/leaderboard')
+    fetch(`${API_BASE}/api/leaderboard`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

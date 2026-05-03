@@ -1,32 +1,36 @@
 /* ============================================================
    TypeRacer — Global Styles & Design Tokens
+   Classic Professional Dark Theme — Single Accent
    ============================================================ */
 
 @import 'tailwindcss';
 
 :root {
-  /* Core palette — dark theme */
-  --bg-primary:   #0d0f14;
-  --bg-secondary: #13161f;
-  --bg-card:      #1a1d28;
-  --bg-elevated:  #21253a;
+  /* Core palette */
+  --bg-primary:   #0c0c0e;
+  --bg-secondary: #111116;
+  --bg-card:      #17171d;
+  --bg-elevated:  #1f1f27;
 
-  --accent:       #7c3aed;
-  --accent-light: #a78bfa;
-  --accent-glow:  rgba(124, 58, 237, 0.35);
+  /* Single accent — steel blue, clean & classic */
+  --accent:       #3b82f6;
+  --accent-light: #93c5fd;
+  --accent-glow:  rgba(59, 130, 246, 0.2);
 
-  --correct:      #10b981;
-  --correct-bg:   rgba(16, 185, 129, 0.12);
-  --error:        #ef4444;
-  --error-bg:     rgba(239, 68, 68, 0.18);
-  --cursor:       #f8fafc;
+  --correct:      #4ade80;
+  --correct-bg:   rgba(74, 222, 128, 0.10);
+  --error:        #f87171;
+  --error-bg:     rgba(248, 113, 113, 0.14);
+  --cursor:       #e2e8f0;
 
-  --text-primary:   #f1f5f9;
+  /* Text — untyped is clearly readable now */
+  --text-primary:   #e2e8f0;
   --text-secondary: #94a3b8;
-  --text-muted:     #475569;
+  --text-muted:     #64748b;
+  --text-untyped:   #8892a4;   /* was too dark — now visible */
 
-  --border:       rgba(255,255,255,0.08);
-  --border-hover: rgba(255,255,255,0.15);
+  --border:       rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.14);
 
   font-family: 'Inter', system-ui, sans-serif;
   color-scheme: dark;
@@ -34,7 +38,6 @@
 
 /* ---- Reset ---- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 html { scroll-behavior: smooth; }
 
 body {
@@ -52,20 +55,7 @@ body {
   flex-direction: column;
 }
 
-/* ---- Background grid pattern ---- */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
-}
-
 /* ---- Scrollbar ---- */
-::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
-::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 2px; }

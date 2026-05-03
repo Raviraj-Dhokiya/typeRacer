@@ -37,6 +37,63 @@ export default function ProfilePage({ onBack }) {
   const recent = [...results].slice(0, 10).reverse()
   const maxWPM = recent.length ? Math.max(...recent.map(r => r.wpm), 1) : 1
 
+  // Full-year heatmap — Jan 1 2026 → Dec 31 2026 (GitHub-style)
+  const toLocalKey = (d) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+  const todayKey = toLocalKey(new Date())
+
+  // Build a map of date → count for fast lookup
+  const countMap = {}
+  results.forEach(r => {
+    if (r.date) {
+      const k = r.date.slice(0, 10)
+      countMap[k] = (countMap[k] || 0) + 1
+    }
+  })
+
+  // Month-wise Data Generation
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const monthsData = []
+  let maxCount = 1
+
+  for (let m = 0; m < 12; m++) {
+    const mStart = new Date(2026, m, 1)
+    const mEnd = new Date(2026, m + 1, 0)
+    
+    const daysInMonth = mEnd.getDate()
+    const startDow = mStart.getDay()
+    
+    const monthDays = []
+    for (let i = 0; i < startDow; i++) monthDays.push(null)
+    
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateObj = new Date(2026, m, d)
+      const key = toLocalKey(dateObj)
+      const count = countMap[key] || 0
+      if (count > maxCount) maxCount = count
+      monthDays.push({ date: dateObj, key, count })
+    }
+    
+    while (monthDays.length % 7 !== 0) monthDays.push(null)
+    
+    const mWeeks = []
+    for (let i = 0; i < monthDays.length; i += 7) {
+      mWeeks.push(monthDays.slice(i, i + 7))
+    }
+    
+    monthsData.push({
+      label: MONTHS[m],
+      weeks: mWeeks
+    })
+  }
+
+  const testsToday = countMap[todayKey] || 0
+
+
   const handleLogout = () => {
     logout()
     onBack()
@@ -82,6 +139,88 @@ export default function ProfilePage({ onBack }) {
         <StatBox label="Best WPM" value={bestWPM} color="#f59e0b" />
         <StatBox label="Avg WPM" value={avgWPM} color="var(--accent-light)" />
         <StatBox label="Avg Accuracy" value={`${avgAcc}%`} color="var(--correct)" />
+      </div>
+
+      {/* Activity Heatmap — Full Year 2026 */}
+      <div className="profile-panel" style={{ marginBottom: '0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h3 className="panel-title" style={{ margin: 0 }}>Activity — 2026</h3>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            {testsToday} test{testsToday !== 1 ? 's' : ''} today
+            &nbsp;·&nbsp;{totalTests} total
+          </span>
+        </div>
+
+        {/* Separated Months Grid */}
+        <div style={{ overflowX: 'auto', paddingBottom: '8px' }}>
+          <div style={{ display: 'flex', gap: '16px', minWidth: 'max-content' }}>
+            {/* Day-of-week labels */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '4px', marginTop: '16px' }}>
+              {['S','M','T','W','T','F','S'].map((d, i) => (
+                <div key={i} style={{ width: '11px', height: '11px', fontSize: '9px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', userSelect: 'none' }}>
+                  {i % 2 === 1 ? d : ''}
+                </div>
+              ))}
+            </div>
+
+            {/* Months */}
+            {monthsData.map((month, mi) => (
+              <div key={mi} style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px', userSelect: 'none', paddingLeft: '1px' }}>
+                  {month.label}
+                </div>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {month.weeks.map((week, wi) => (
+                    <div key={wi} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      {week.map((cell, dow) => {
+                        if (!cell) {
+                          return <div key={dow} style={{ width: '11px', height: '11px' }} />
+                        }
+                        const isFuture = cell.key > todayKey
+                        const intensity = cell.count === 0 ? 0 : Math.min(1, Math.max(0.22, cell.count / maxCount))
+                        const label = cell.date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+                        return (
+                          <div
+                            key={dow}
+                            title={`${label}: ${cell.count} test${cell.count !== 1 ? 's' : ''}`}
+                            style={{
+                              width: '11px',
+                              height: '11px',
+                              borderRadius: '2px',
+                              backgroundColor: isFuture
+                                ? 'transparent'
+                                : cell.count === 0
+                                  ? 'var(--bg-elevated)'
+                                  : `rgba(59, 130, 246, ${intensity})`,
+                              border: isFuture ? 'none' : cell.count === 0 ? '1px solid var(--border)' : '1px solid rgba(59,130,246,0.25)',
+                              cursor: 'default',
+                              transition: 'transform 0.12s',
+                            }}
+                            onMouseEnter={e => { if (!isFuture) e.currentTarget.style.transform = 'scale(1.4)' }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)' }}
+                          />
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px', justifyContent: 'flex-end' }}>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Less</span>
+          {[0, 0.25, 0.5, 0.75, 1].map(v => (
+            <div key={v} style={{
+              width: '11px', height: '11px', borderRadius: '2px',
+              backgroundColor: v === 0 ? 'var(--bg-elevated)' : `rgba(59,130,246,${v})`,
+              border: v === 0 ? '1px solid var(--border)' : '1px solid rgba(59,130,246,0.25)'
+            }} />
+          ))}
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>More</span>
+        </div>
       </div>
 
       {/* Tabs */}

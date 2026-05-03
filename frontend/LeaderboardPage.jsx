@@ -6,7 +6,7 @@ export default function LeaderboardPage({ onBack }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/leaderboard')
+    fetch('/api/leaderboard')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

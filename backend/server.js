@@ -84,26 +84,31 @@ app.post('/api/auth/register', async (req, res) => {
       await user.save();
     }
     
-    try {
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
-          pass: process.env.EMAIL_PASS || 'dummy_password'
-        }
-      });
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
-        to: email,
-        subject: 'Your TypeRacer Verification OTP',
-        text: `Your verification OTP is: ${otp}. It will expire in 10 minutes.`
-      });
-      console.log(`✅ OTP sent to ${email}: ${otp}`); // For debugging without real email
-    } catch (emailErr) {
-      console.error("❌ Email failed to send. Check credentials. OTP is:", otp);
-    }
-    
+    // Respond immediately — don't wait for email
     res.json({ message: 'OTP sent to your email. Please verify to continue.', requireOtp: true, email: user.email });
+
+    // Send email in background (fire-and-forget)
+    const sendOtp = async () => {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
+            pass: process.env.EMAIL_PASS || 'dummy_password'
+          }
+        });
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER || 'typeracer.dummy@gmail.com',
+          to: email,
+          subject: 'Your TypeRacer Verification OTP',
+          text: `Your verification OTP is: ${otp}. It will expire in 10 minutes.`
+        });
+        console.log(`✅ OTP sent to ${email}: ${otp}`);
+      } catch (emailErr) {
+        console.error('❌ Email failed. OTP is:', otp);
+      }
+    };
+    sendOtp();
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
@@ -152,6 +157,11 @@ app.post('/api/auth/login', async (req, res) => {
       user.otpExpires = new Date(Date.now() + 10 * 60000);
       await user.save();
       
+      // Respond immediately — don't wait for email
+      return res.status(400).json({ error: 'Please verify your email first. A new OTP has been sent.', requireOtp: true, email: user.email });
+    }
+    // Send email in background (fire-and-forget) for login-triggered OTP
+    const sendLoginOtp = async () => {
       try {
         const transporter = nodemailer.createTransport({
           service: 'gmail',
@@ -166,11 +176,11 @@ app.post('/api/auth/login', async (req, res) => {
           subject: 'Your TypeRacer Verification OTP',
           text: `Your verification OTP is: ${otp}. It will expire in 10 minutes.`
         });
-        console.log(`✅ OTP sent to ${email}: ${otp}`); // For debugging
-      } catch (emailErr) {
-        console.error("❌ Email failed to send. Check credentials. OTP is:", otp);
-      }
-      return res.status(400).json({ error: 'Please verify your email first. A new OTP has been sent.', requireOtp: true, email: user.email });
+        console.log(`✅ OTP sent to ${email}`);
+      } catch (e) { console.error('❌ Email failed. OTP is:', otp); }
+    };
+    sendLoginOtp();
+    return;
     }
     
     const isMatch = await bcrypt.compare(password, user.password);

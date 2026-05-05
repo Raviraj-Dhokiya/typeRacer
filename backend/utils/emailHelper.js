@@ -37,21 +37,52 @@ export const sendOtpEmail = async (email, otp) => {
   `;
 
   if (process.env.EMAIL_PASS && process.env.EMAIL_USER) {
-    console.log(`📤 Calling Gmail SMTP server...`);
     try {
+      // 1. Try Brevo API First (Bypasses Render's SMTP Port 465 Block by using standard HTTPS Port 443)
+      if (process.env.BREVO_API_KEY) {
+        console.log(`📤 Calling Brevo API over HTTPS (Bypasses Render Block)...`);
+        
+        const payload = {
+          sender: {
+            name: 'TypeRacer',
+            email: process.env.EMAIL_USER || 'ravirajdhokiya9@gmail.com',
+          },
+          to: [{ email }],
+          subject: 'Your TypeRacer Verification OTP',
+          htmlContent: htmlContent,
+        };
+
+        const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': process.env.BREVO_API_KEY,
+            'content-type': 'application/json',
+            'accept': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          console.log(`✅ OTP email sent via Brevo successfully to ${email}`);
+          return; // Exit if Brevo succeeds
+        } else {
+          console.error(`❌ Brevo API returned error ${res.status}`);
+          // Fall through to Nodemailer...
+        }
+      }
+
+      // 2. Fallback to Nodemailer (Works locally, but blocked on Render Free Tier)
+      console.log(`📤 Calling Gmail SMTP server...`);
       const transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 465,
-        secure: true, // Use SSL
+        secure: true,
         auth: {
           user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS, // Expected 16-char App Password from .env
+          pass: process.env.EMAIL_PASS, 
         },
-        tls: {
-          rejectUnauthorized: false,
-        },
-        // Force IPv4 because Render's free tier has broken IPv6 routing
-        family: 4,
+        tls: { rejectUnauthorized: false },
+        family: 4, 
       });
 
       const info = await transporter.sendMail({
@@ -64,7 +95,7 @@ export const sendOtpEmail = async (email, otp) => {
       console.log(`✅ OTP email sent successfully to ${email} via Gmail!`);
       console.log(`   Message ID: ${info.messageId}`);
     } catch (err) {
-      console.error(`❌ Gmail SMTP Error: ${err.message}`);
+      console.error(`❌ Email Error: ${err.message}`);
       console.warn(`\n   👉 OTP for manual testing: ${otp}`);
     }
   } else {

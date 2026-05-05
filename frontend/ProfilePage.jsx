@@ -262,7 +262,7 @@ export default function ProfilePage({ onBack }) {
                     <PieChart>
                       <Pie
                         data={[
-                          { name: 'Common', value: results.filter(r => r.mode === 'common').length, color: '#3b82f6' },
+                          { name: 'Paragraph', value: results.filter(r => r.mode === 'paragraph' || r.mode === 'common').length, color: '#3b82f6' },
                           { name: 'Code', value: results.filter(r => r.mode === 'code').length, color: '#10b981' },
                           { name: 'Quotes', value: results.filter(r => r.mode === 'quotes').length, color: '#f59e0b' }
                         ].filter(d => d.value > 0)}
@@ -270,7 +270,7 @@ export default function ProfilePage({ onBack }) {
                       >
                         {
                           [
-                            { name: 'Common', value: results.filter(r => r.mode === 'common').length, color: '#3b82f6' },
+                            { name: 'Paragraph', value: results.filter(r => r.mode === 'paragraph' || r.mode === 'common').length, color: '#3b82f6' },
                             { name: 'Code', value: results.filter(r => r.mode === 'code').length, color: '#10b981' },
                             { name: 'Quotes', value: results.filter(r => r.mode === 'quotes').length, color: '#f59e0b' }
                           ].filter(d => d.value > 0).map((entry, index) => (
@@ -283,16 +283,16 @@ export default function ProfilePage({ onBack }) {
                   </ResponsiveContainer>
                 </div>
                 <div style={{ flex: 1, minWidth: '200px' }}>
-                  {['common', 'code', 'quotes'].map(m => {
-                    const modeResults = results.filter(r => r.mode === m)
+                  {['paragraph', 'code', 'quotes'].map(m => {
+                    const modeResults = results.filter(r => m === 'paragraph' ? (r.mode === 'paragraph' || r.mode === 'common') : r.mode === m)
                     if (modeResults.length === 0) return null;
                     const modeAvg = Math.round(modeResults.reduce((s, r) => s + r.wpm, 0) / modeResults.length)
-                    const colors = { common: '#3b82f6', code: '#10b981', quotes: '#f59e0b' };
+                    const colors = { paragraph: '#3b82f6', code: '#10b981', quotes: '#f59e0b' };
                     return (
                       <div key={m} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: colors[m] }}></div>
-                          <span style={{ textTransform: 'capitalize', fontWeight: 'bold' }}>{m} Words</span>
+                          <span style={{ textTransform: 'capitalize', fontWeight: 'bold' }}>{m === 'paragraph' ? 'Paragraph' : m + ' Words'}</span>
                           <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>({modeResults.length} tests)</span>
                         </div>
                         <div style={{ fontWeight: 'bold', color: 'var(--text)' }}>
@@ -338,7 +338,7 @@ export default function ProfilePage({ onBack }) {
                       <td>{r.timeTaken}s</td>
                       <td>
                         <span className="history-mode-badge">
-                          {r.mode === 'common' ? 'Words' : r.mode === 'code' ? 'Code' : 'Quote'}
+                          {r.mode === 'paragraph' || r.mode === 'common' ? 'Paragraph' : r.mode === 'code' ? 'Code' : 'Quote'}
                         </span>
                       </td>
                       <td className="history-date">{formatDate(r.date)}</td>

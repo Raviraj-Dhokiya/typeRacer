@@ -15,7 +15,7 @@ import { generateText, calcWPM, calcAccuracy } from './utils/textUtils'
 /* ── Constants ─────────────────────────────────────────── */
 const TIMER_OPTIONS = [15, 30, 60, 120]
 const MODE_OPTIONS  = [
-  { key: 'common', label: 'Common Words' },
+  { key: 'paragraph', label: 'Paragraph' },
   { key: 'code',   label: 'Code'         },
   { key: 'quotes', label: 'Quotes'       },
 ]
@@ -30,9 +30,9 @@ export default function App() {
   const [showAuth, setShowAuth] = useState(false)
 
   /* Test state */
-  const [mode,      setMode]      = useState('common')
+  const [mode,      setMode]      = useState('paragraph')
   const [timeLimit, setTimeLimit] = useState(30)
-  const [text,      setText]      = useState(() => generateText('common'))
+  const [text,      setText]      = useState(() => generateText('paragraph'))
   const [typed,     setTyped]     = useState('')
   const [started,   setStarted]   = useState(false)
   const [finished,  setFinished]  = useState(false)
@@ -59,7 +59,7 @@ export default function App() {
   const reset = useCallback(() => {
     clearInterval(timerRef.current)
     startTimeRef.current = null
-    setText(generateText(mode, mode === 'quotes' ? undefined : 60))
+    setText(generateText(mode, (mode === 'quotes' || mode === 'paragraph') ? undefined : 60))
     setTyped('')
     setStarted(false)
     setFinished(false)
@@ -138,7 +138,7 @@ export default function App() {
 
   /* ── New text helper ── */
   const loadNewText = () => {
-    setText(generateText(mode, mode === 'quotes' ? undefined : 60))
+    setText(generateText(mode, (mode === 'quotes' || mode === 'paragraph') ? undefined : 60))
     setTyped('')
     setStarted(false)
     clearInterval(timerRef.current)

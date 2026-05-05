@@ -5,6 +5,10 @@
 // by receiving servers due to Google's strict DMARC policies.
 
 import nodemailer from 'nodemailer';
+import dns from 'dns';
+
+// Fix for Render / Cloud providers where IPv6 is not properly routed (fixes ENETUNREACH)
+dns.setDefaultResultOrder('ipv4first');
 
 export const sendOtpEmail = async (email, otp) => {
   console.log(`\n🔔 ===== OTP Email Trigger =====`);
@@ -36,11 +40,18 @@ export const sendOtpEmail = async (email, otp) => {
     console.log(`📤 Calling Gmail SMTP server...`);
     try {
       const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // Use SSL
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS, // Expected 16-char App Password from .env
         },
+        tls: {
+          rejectUnauthorized: false,
+        },
+        // Force IPv4 because Render's free tier has broken IPv6 routing
+        family: 4,
       });
 
       const info = await transporter.sendMail({

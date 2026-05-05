@@ -23,6 +23,7 @@ const MODE_OPTIONS  = [
 /* ── App ────────────────────────────────────────────────── */
 export default function App() {
   const { user, logout, saveResult } = useAuth()
+  // Note: user, logout, saveResult all come from Redux via AuthContext bridge
 
   /* View */
   const [view,     setView]     = useState('test') // 'test' | 'profile'

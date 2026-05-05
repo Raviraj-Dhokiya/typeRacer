@@ -1,186 +1,143 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+// frontend/AuthContext.jsx
+// AuthContext now acts as a thin bridge between Redux store and components.
+// All auth state lives in Redux (store/authSlice.js).
+// Components that need auth actions import from here via useAuth().
+
+import { createContext, useContext, useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import toast from 'react-hot-toast'
 import confetti from 'canvas-confetti'
+
+import {
+  loginUser,
+  registerUser,
+  verifyOtp,
+  resendOtp as resendOtpThunk,
+  logout as logoutAction,
+  clearAuthError,
+  cancelOtp,
+  updateUserData,
+} from './store/authSlice'
+import { saveResult as saveResultThunk, fetchResults, clearResults } from './store/resultsSlice'
 import { BADGES_DATA } from './utils/badgesList'
-import { API_BASE } from './utils/api'
+
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(null)
-  const [results, setResults] = useState([])
+  const dispatch = useDispatch()
+  const { user, token, loading, error, otpPending, otpEmail } = useSelector((s) => s.auth)
+  const results = useSelector((s) => s.results.items)
 
-  // Load user from localStorage on mount
-  useEffect(() => {
-    const storedUser = localStorage.getItem('typeracer_user')
-    const storedToken = localStorage.getItem('typeracer_token')
-    if (storedUser && storedToken) {
-      try { 
-        setUser(JSON.parse(storedUser)) 
-        setToken(storedToken)
-      } catch {}
-    }
-  }, [])
-
+  // Fetch results whenever user logs in
   useEffect(() => {
     if (token) {
-      fetchResults()
+      dispatch(fetchResults())
     } else {
-      setResults([])
+      dispatch(clearResults())
     }
-  }, [token])
+  }, [token, dispatch])
 
+  // ── register ────────────────────────────────────────────────────────
   const register = async (username, email, password) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password })
-      })
-      const data = await res.json()
-      if (!res.ok) return { error: data.error || 'Registration failed' }
-      
-      if (data.requireOtp) {
-        toast.success('OTP sent to your email!')
-        return { success: true, requireOtp: true, email: data.email }
-      }
-      
-      localStorage.setItem('typeracer_token', data.token)
-      localStorage.setItem('typeracer_user', JSON.stringify(data.user))
-      setToken(data.token)
-      setUser(data.user)
-      toast.success('Account created successfully!')
-      return { success: true }
-    } catch (err) {
-      return { error: 'Network error' }
+    const action = await dispatch(registerUser({ username, email, password }))
+    if (registerUser.fulfilled.match(action)) {
+      toast.success('OTP sent to your email!')
+      return { success: true, requireOtp: action.payload.requireOtp, email: action.payload.email }
     }
+    return { error: action.payload }
   }
 
+  // ── login ────────────────────────────────────────────────────────────
   const login = async (email, password) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        if (data.requireOtp) {
-          toast.success('A new OTP has been sent to your email!')
-          return { error: data.error, requireOtp: true, email: data.email }
-        }
-        return { error: data.error || 'Login failed' }
-      }
-      
-      localStorage.setItem('typeracer_token', data.token)
-      localStorage.setItem('typeracer_user', JSON.stringify(data.user))
-      setToken(data.token)
-      setUser(data.user)
+    const action = await dispatch(loginUser({ email, password }))
+    if (loginUser.fulfilled.match(action)) {
       toast.success('Successfully logged in!')
       return { success: true }
-    } catch (err) {
-      return { error: 'Network error' }
     }
+    const payload = action.payload
+    if (payload?.requireOtp) {
+      toast.success('A new OTP has been sent to your email!')
+      return { requireOtp: true, email: payload.email, error: payload.error }
+    }
+    return { error: payload?.error || payload || 'Login failed' }
   }
 
+  // ── logout ───────────────────────────────────────────────────────────
   const logout = () => {
-    localStorage.removeItem('typeracer_token')
-    localStorage.removeItem('typeracer_user')
-    setToken(null)
-    setUser(null)
-    setResults([])
+    dispatch(logoutAction())
     toast.success('Logged out successfully!')
   }
 
-  const saveResult = async (result) => {
-    if (!token) return
-    try {
-      const res = await fetch(`${API_BASE}/api/results`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(result)
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setResults(prev => [data.result, ...prev].slice(0, 50))
-        if (data.userUpdate) {
-          const updatedUser = { ...user, ...data.userUpdate };
-          setUser(updatedUser);
-          localStorage.setItem('typeracer_user', JSON.stringify(updatedUser));
-        }
-        if (data.newBadges && data.newBadges.length > 0) {
-          confetti({
-            particleCount: 150,
-            spread: 70,
-            origin: { y: 0.6 }
-          });
-          data.newBadges.forEach(badgeId => {
-            const badge = BADGES_DATA[badgeId];
-            if (badge) {
-              toast(`Badge Earned: ${badge.name}`, {
-                icon: badge.icon,
-                duration: 5000,
-                style: {
-                  borderRadius: '10px',
-                  background: 'var(--bg-lighter)',
-                  color: 'var(--text)',
-                  border: '1px solid var(--primary)'
-                },
-              });
-            }
-          });
-        }
-      }
-    } catch (err) {
-      console.error('Failed to save result', err)
-    }
-  }
-
-  const fetchResults = async () => {
-    if (!token) return
-    try {
-      const res = await fetch(`${API_BASE}/api/results`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      const data = await res.json()
-      if (res.ok) {
-        setResults(data)
-      }
-    } catch (err) {
-      console.error('Failed to fetch results', err)
-    }
-  }
-
-  const getResults = () => {
-    return results
-  }
-
-  const verifyOtp = async (email, otp) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp })
-      })
-      const data = await res.json()
-      if (!res.ok) return { error: data.error || 'Verification failed' }
-      
-      localStorage.setItem('typeracer_token', data.token)
-      localStorage.setItem('typeracer_user', JSON.stringify(data.user))
-      setToken(data.token)
-      setUser(data.user)
+  // ── verifyOtp ────────────────────────────────────────────────────────
+  const verifyOtpFn = async (email, otp) => {
+    const action = await dispatch(verifyOtp({ email, otp }))
+    if (verifyOtp.fulfilled.match(action)) {
       toast.success('Email verified successfully!')
       return { success: true }
-    } catch (err) {
-      return { error: 'Network error' }
+    }
+    return { error: action.payload }
+  }
+
+  // ── resendOtp ────────────────────────────────────────────────────────
+  const resendOtp = async (email) => {
+    const action = await dispatch(resendOtpThunk({ email }))
+    if (resendOtpThunk.fulfilled.match(action)) {
+      toast.success('New OTP sent to your email!')
+      return { success: true }
+    }
+    return { error: action.payload }
+  }
+
+  // ── saveResult ───────────────────────────────────────────────────────
+  const saveResultFn = async (result) => {
+    if (!token) return
+    const action = await dispatch(saveResultThunk(result))
+    if (saveResultThunk.fulfilled.match(action)) {
+      const { newBadges, userUpdate } = action.payload
+      if (userUpdate) dispatch(updateUserData(userUpdate))
+      if (newBadges?.length > 0) {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } })
+        newBadges.forEach((badgeId) => {
+          const badge = BADGES_DATA[badgeId]
+          if (badge) {
+            toast(`Badge Earned: ${badge.name}`, {
+              icon: badge.icon,
+              duration: 5000,
+              style: {
+                borderRadius: '10px',
+                background: 'var(--bg-lighter)',
+                color: 'var(--text)',
+                border: '1px solid var(--primary)',
+              },
+            })
+          }
+        })
+      }
     }
   }
 
+  const getResults = () => results
+
   return (
-    <AuthContext.Provider value={{ user, register, login, logout, saveResult, getResults, verifyOtp }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        error,
+        otpPending,
+        otpEmail,
+        register,
+        login,
+        logout,
+        verifyOtp: verifyOtpFn,
+        resendOtp,
+        saveResult: saveResultFn,
+        getResults,
+        clearError: () => dispatch(clearAuthError()),
+        cancelOtp: () => dispatch(cancelOtp()),
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
@@ -189,4 +146,3 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   return useContext(AuthContext)
 }
-

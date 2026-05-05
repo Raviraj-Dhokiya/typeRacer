@@ -10,14 +10,14 @@ An advanced, feature-rich Typing Speed Test application built with the **MERN st
 
 ### 1. 🔐 Secure Authentication & User Management
 - **User Registration & Login:** Passwords hashed with `bcryptjs`; sessions managed via JWT (7-day expiry).
-- **Email OTP Verification:** A 6-digit OTP is generated on signup and sent via **Brevo** (Sendinblue) transactional email API. Unverified users cannot log in.
+- **Email OTP Verification:** A 6-digit OTP is generated on signup and sent via **Brevo** (Sendinblue) transactional email API. Unverified users cannot log in. Validates for disposable and misspelled emails.
 - **Fire-and-Forget Email:** The server responds immediately to the client and dispatches the OTP email in the background — eliminating signup latency.
-- **Context API State:** `AuthContext` manages user sessions globally across the frontend, persisting the JWT in `localStorage`.
+- **State Management:** Fully powered by **Redux Toolkit** (auth and results slices), cleanly wrapped in an `AuthContext` provider for seamless legacy component integration.
 
 ### 2. ⚡ Core Typing Engine
 - **Real-time Calculations:** Live updates for WPM (Words Per Minute), Accuracy, Time Left, and Error count.
 - **Multiple Modes:** Choose from 3 practice modes:
-  - **Common Words** — Standard everyday vocabulary.
+  - **Paragraph** — High-quality, meaningful long-form paragraphs.
   - **Code** — Programming syntax and symbols.
   - **Quotes** — Full sentences with punctuation.
 - **Flexible Timers:** 15s, 30s, 60s, or 120s sessions.
@@ -51,29 +51,26 @@ An advanced, feature-rich Typing Speed Test application built with the **MERN st
 ```text
 typeRacer/
 ├── backend/
+│   ├── middleware/              # Authentication middlewares
 │   ├── models/
 │   │   ├── Result.js            # Mongoose schema for test results
 │   │   └── User.js              # Mongoose schema for users (auth, badges, xp, otp)
+│   ├── routes/                  # Express routes (auth, results, leaderboard)
+│   ├── utils/                   # Email helpers (Nodemailer, Brevo integration)
 │   ├── badgeEngine.js           # Core logic for evaluating XP, levels & unlocking badges
-│   └── server.js                # Express server, REST API (/auth, /results, /leaderboard)
+│   └── server.js                # Express server setup and MongoDB connection
 ├── frontend/
 │   ├── assets/                  # Static assets
-│   ├── components/
-│   │   ├── ResultsPanel.jsx     # Post-test summary screen
-│   │   ├── StatCard.jsx         # UI component for individual stats (WPM, Acc, etc.)
-│   │   ├── TextDisplay.jsx      # Typing text rendering & caret logic
-│   │   └── UserMenu.jsx         # Profile / Logout dropdown in the header
-│   ├── utils/
-│   │   ├── api.js               # Centralized API_BASE URL (supports Vite proxy & production)
-│   │   ├── badgesList.js        # Data definition for all 30+ badges and Level Titles
-│   │   └── textUtils.js         # Word generation and WPM/Accuracy formulas
+│   ├── components/              # Reusable UI components (StatCard, TextDisplay, UserMenu, etc.)
+│   ├── store/                   # Redux Toolkit (authSlice.js, resultsSlice.js, index.js)
+│   ├── utils/                   # API utilities, badge definitions, text/paragraph generators
 │   ├── App.jsx                  # Main routing, state management & typing engine
 │   ├── App.css                  # Custom styling, dark theme & animations
-│   ├── AuthContext.jsx          # React Context for authentication state
+│   ├── AuthContext.jsx          # React Context wrapping the Redux store
 │   ├── AuthModal.jsx            # Modal UI for Login, Signup & OTP input
 │   ├── LeaderboardPage.jsx      # Global Leaderboard view
 │   ├── ProfilePage.jsx          # User dashboard (Stats, Heatmap, History, Badges)
-│   ├── index.css                # Tailwind CSS v4 base imports
+│   ├── index.css                # Base CSS imports
 │   └── main.jsx                 # React root render
 ├── .env                         # Secrets (see Environment Variables section)
 ├── .gitignore                   # Excludes .env, node_modules, dist
@@ -88,12 +85,12 @@ typeRacer/
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | React 19, Vite 8, Tailwind CSS v4 |
+| **Frontend** | React 19, Vite 8, Redux Toolkit |
 | **Charts & UI** | Recharts, React Hot Toast, canvas-confetti |
 | **Backend** | Node.js, Express 5 |
 | **Database** | MongoDB Atlas (via Mongoose) |
-| **Auth & Security** | JWT (`jsonwebtoken`), bcryptjs |
-| **Email** | Brevo (Sendinblue) REST API |
+| **Auth & Security** | JWT (`jsonwebtoken`), bcryptjs, deep-email-validator |
+| **Email** | Nodemailer & Brevo (Sendinblue) REST API |
 | **Dev Tooling** | concurrently, ESLint |
 | **Deployment** | Vercel (frontend) + Render (backend) |
 
